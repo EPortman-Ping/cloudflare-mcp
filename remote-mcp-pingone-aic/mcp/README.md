@@ -8,8 +8,7 @@ Cloudflare Workers MCP server secured with PingOne Advanced Identity Cloud (AIC)
 | :--- | :--- | :--- |
 | **Platform** | [Cloudflare Workers](https://workers.cloudflare.com) | Serverless execution |
 | **Framework** | [Hono](https://hono.dev) | Lightweight API endpoints |
-| **Agent Execution** | [Cloudflare Agents SDK](https://developers.cloudflare.com/agents) | Base class for implementing the stateful MCP server |
-| **Session State** | [Cloudflare Durable Objects](https://developers.cloudflare.com/durable-objects) | Provides stateful, isolated storage for each MCP connection |
+| **Agent Execution** | [Cloudflare Agents SDK](https://developers.cloudflare.com/agents) | Stateless MCP server factory served via `createMcpHandler` |
 
 ### Requirements
 
@@ -27,8 +26,8 @@ mcp/
 ├── wrangler.jsonc             # Worker configuration
 └── src/
     ├── index.ts               # Defines the HTTP interface, handling MCP server discovery and MCP server routing
-    ├── mcp.ts                 # Stateful MCP server as a cloudflare McpAgent (durable object)
-    ├── config.ts              # Worker bindings and durable object session data
+    ├── mcp.ts                 # Stateless MCP server factory (MCP SDK v2), one instance per request
+    ├── config.ts              # Worker bindings and per-request authenticated session data
     ├── auth.ts                # Manages auth middleware and executes token exchange (delegation grant)
     └── todoApi.client.ts      # HTTP client to the downstream Todo API
 ```
@@ -170,20 +169,20 @@ npm run deploy
 | Name | Description | Example |
 | :--- | :--- | :--- |
 | PING_AIC_ISSUER | PingOne AIC environment domain | `https://<ENV>.forgeblocks.com:443/am/oauth2/alpha` |
-| MCP_SERVER_URL | URL of the deployed MCP server | `https://remote-mcp-ping-aic.<ENV>.workers.dev` |
+| MCP_SERVER_IDENTIFIER | URL of the deployed MCP server | `https://remote-mcp-ping-aic.<ENV>.workers.dev/mcp` |
 | MCP_SERVER_CLIENT_ID | ID of the MCP server client | `mcp_server` |
 | MCP_SERVER_CLIENT_SECRET | Secret of the MCP server client | `[A long, random, alphanumeric string]` |
 | API_URL | URL of the downstream Todo API | `https://todo-api-ping-aic.<ENV>.workers.dev` |
 
 ```zsh
 wrangler secret put PING_AIC_ISSUER
-wrangler secret put MCP_SERVER_URL
+wrangler secret put MCP_SERVER_IDENTIFIER
 wrangler secret put MCP_SERVER_CLIENT_ID
 wrangler secret put MCP_SERVER_CLIENT_SECRET
 wrangler secret put API_URL
 ```
 
-3. Lastly, make sure the `mcpServerUrl` is correct in the AIC may_act scriot (PingOne AIC Configuration step 2.2)
+3. Lastly, make sure the `mcpServerUrl` is correct in the AIC may_act script (PingOne AIC Configuration step 2.2)
 
 ## 🤖 Testing the MCP Server with the MCP Inspector
 

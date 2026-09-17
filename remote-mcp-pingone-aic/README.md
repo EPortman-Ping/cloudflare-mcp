@@ -42,15 +42,16 @@ When an unregistered MCP client tries to connect to the MCP server without a tok
 > [!NOTE]
 > This implementation utilizes Dynamic Client Registration (DCR) to handle client onboarding. While the MCP protocol recommends CIMD as the new standard, DCR remains the only production-ready option currently supported by enterprise identity providers like PingOne AIC. Future versions of this architecture may transition to CIMD as support becomes available.
 
-### Cloudflare Agents (State & Transport)
+### Cloudflare Agents (Stateless Transport)
 
-The MCP server extends the McpAgent class, which automatically wraps the MCP logic in a durable object. This handles the complex infrastructure requirements:
-- **Session Persistence:** It creates a dedicated, isolated environment for each MCP connection and securely persists the PingOne AIC tokens in the durable object's storage (`this.props`).
-- **Network Transport:** The agent manages the raw HTTP connection. It accepts incoming requests and keeps the response open as a Server-Sent Events (SSE) stream, enabling the Durable Object to push real-time updates back to the client over the single endpoint.
+The MCP server implements the stateless MCP SDK v2 pattern (`createMcpHandler` + server factory, via the [Cloudflare Agents SDK](https://developers.cloudflare.com/agents)):
+- **Stateless Operation:** A fresh MCP server instance is created per request — no Durable Object, no protocol session. The MCP 2026-07-28 protocol revision carries version, capabilities, and identity on every request, so nothing needs to be remembered between requests.
+- **Per-Request Authentication:** The auth middleware validates the MCP client's subject token and injects it into each MCP server instance via the factory closure.
+- **Network Transport:** Standard Streamable HTTP over the single `/mcp` endpoint.
 
-### MCP SDK (Tool Logic)
+### MCP SDK v2 (Tool Logic)
 
-The official `@modelcontextprotocol/sdk` is used to define the actual capabilities of the MCP server. Inside the agent, an McpServer instance:
+The `@modelcontextprotocol/server` SDK (v2) is used to define the actual capabilities of the MCP server. Each per-request McpServer instance:
 - **Handles Protocol:** Manages the serialization of JSON-RPC messages and tool definitions.
 
 ## Use Cases & Extensibility

@@ -4,7 +4,6 @@ import type { JWTPayload } from 'jose';
  * External cloudflare resources (bindings) available to the worker at runtime.
  */
 export type Env = {
-  MCP_OBJECT: DurableObjectNamespace;
   PING_AIC_ISSUER: string;
   MCP_SERVER_IDENTIFIER: string;
   MCP_SERVER_CLIENT_ID: string;
