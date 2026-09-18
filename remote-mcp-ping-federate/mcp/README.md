@@ -8,12 +8,12 @@ Cloudflare Workers MCP server secured with PingFederate. This MCP server enables
 | :--- | :--- | :--- |
 | **Platform** | [Cloudflare Workers](https://workers.cloudflare.com) | Serverless execution |
 | **Framework** | [Hono](https://hono.dev) | Lightweight API endpoints |
-| **Agent Execution** | [Cloudflare Agents SDK](https://developers.cloudflare.com/agents) | Base class for implementing the stateful MCP server |
-| **Session State** | [Cloudflare Durable Objects](https://developers.cloudflare.com/durable-objects) | Provides stateful, isolated storage for each MCP connection |
+| **MCP Transport** | [Cloudflare Agents SDK](https://developers.cloudflare.com/agents) | Serves MCP traffic on the `/mcp` endpoint over Streamable HTTP |
+| **MCP Server** | [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) | Defines the tools and implements the MCP protocol |
 
 ### Requirements
 
-* Node.js (v20+)
+* Node.js (v22+)
 * PingFederate server
 * Cloudflare account & [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update)
 * [Todo API](../api) deployed
@@ -27,8 +27,8 @@ mcp/
 ├── wrangler.jsonc             # Worker configuration
 └── src/
     ├── index.ts               # Defines the HTTP interface, handling MCP server discovery and MCP server routing
-    ├── mcp.ts                 # Stateful MCP server as a cloudflare McpAgent (durable object)
-    ├── config.ts              # Worker bindings and durable object session data
+    ├── mcp.ts                 # Stateless MCP server factory (MCP SDK v2), one instance per request
+    ├── config.ts              # Worker bindings and per-request authenticated session data
     ├── auth.ts                # Manages auth middleware and executes token exchange (delegation grant)
     └── todoApi.client.ts      # HTTP client to the downstream Todo API
 ```
@@ -191,14 +191,14 @@ This step registers the MCP server as a confidential client authorized to perfor
     | Name | Description | Example |
     | :--- | :--- | :--- |
     | PING_FEDERATE_ISSUER | PingFederate server domain | `https://<ENV>.com:9031` |
-    | MCP_SERVER_URL | URL of the deployed MCP server | `https://remote-mcp-ping-federate.<ENV>.workers.dev` |
+    | MCP_SERVER_IDENTIFIER | URL of the deployed MCP server | `https://remote-mcp-ping-federate.<ENV>.workers.dev/mcp` |
     | MCP_SERVER_CLIENT_ID | ID of the MCP server client | `mcp_server` |
     | MCP_SERVER_CLIENT_SECRET | Secret of the MCP server client | `[A long, random, alphanumeric string]` |
     | API_URL | URL of the downstream Todo API | `https://todo-api-ping-federate.<ENV>.workers.dev` |
 
     ```zsh
     wrangler secret put PING_FEDERATE_ISSUER
-    wrangler secret put MCP_SERVER_URL
+    wrangler secret put MCP_SERVER_IDENTIFIER
     wrangler secret put MCP_SERVER_CLIENT_ID
     wrangler secret put MCP_SERVER_CLIENT_SECRET
     wrangler secret put API_URL

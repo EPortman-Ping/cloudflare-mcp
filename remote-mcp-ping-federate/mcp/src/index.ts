@@ -1,17 +1,9 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { TodoMcpServer } from './mcp'; 
-import { authenticationMiddleware } from './auth'; 
-import { type Env, MCP_SERVER_SCOPES } from './config';
-
-/**
- * Durable Object Export - Session State Management
- *
- * This export identifies the TodoMCPServer (an McpAgent base class) as the stateful backing logic for
- * the durable object binding. The cloudflare runtime uses this to instantiate a unique, isolated instance
- * per MCP session, ensuring state continuity and persistence across the worker's stateless HTTP requests.
- */
-export { TodoMcpServer };
+import { createMcpHandler } from 'agents/mcp/server';
+import { createTodoServer } from './mcp';
+import { authenticationMiddleware } from './auth';
+import { type Env, type Props, MCP_SERVER_SCOPES } from './config';
 
 /**
  * Worker Export - Metadata & MCP Router (HTTP Interface)
@@ -20,7 +12,8 @@ export { TodoMcpServer };
  * Manages MCP client discovery and authenticated MCP communication.
  *   - Metadata Server: Serves well-known documents to guide MCP clients through the registration/authorization process
  *   - Authentication Gate: Validates the MCP client's subject token (user token) before routing.
- *   - Stateful Router: Connects the authenticated request to the correct TodoMcpServer durable object instance.
+ *   - Stateless Router: Serves a fresh MCP server instance per request (MCP SDK v2), with the
+ *     authenticated session passed to each instance via the factory closure.
  */
 export default new Hono<{ Bindings: Env }>()
   .use(cors())
@@ -57,9 +50,14 @@ export default new Hono<{ Bindings: Env }>()
   })
 
   // Applies the auth middleware to validate the MCP client's subject token (the user token),
-  // and then injects the claims/token into the stateful durable object execution context.
+  // and then injects the claims/token into the hono execution context.
   .use('/mcp', authenticationMiddleware)
 
-  // Routes the authenticated request to the correct durable object (`TodoMcpServer`).
-  // This enables persistent MCP communication via Streamable HTTP Transport
-  .route('/mcp', new Hono().mount('/', TodoMcpServer.serve('/mcp').fetch));
+  // Serves a fresh, stateless MCP server instance per request (MCP SDK v2), passing the
+  // authenticated session through the factory closure. Enables MCP communication via
+  // Streamable HTTP Transport without a Durable Object.
+  .use('/mcp', async (c) => {
+    return createMcpHandler(
+      () => createTodoServer(c.env, c.executionCtx.props as Props),
+    )(c.req.raw, c.env, c.executionCtx as unknown as ExecutionContext);
+  });

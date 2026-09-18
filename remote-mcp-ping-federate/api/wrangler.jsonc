@@ -22,7 +22,7 @@
 		{
 			"binding": "TODO_KV_PING_FEDERATE",
 			// TODO: Replace placeholder with real ID from cloudflare before deploying
-			"id": "<PLACEHOLDER>"
+			"id": "b6670262dc8343779b44e31f8e1790fd"
 		}
 	],
   "observability": {
