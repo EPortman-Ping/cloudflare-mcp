@@ -14,14 +14,14 @@ Cloudflare Workers MCP server secured using the Cloudflare Workers OAuth Provide
 | :--- | :--- | :--- |
 | **Platform** | [Cloudflare Workers](https://workers.cloudflare.com) | Serverless execution |
 | **Framework** | [Hono](https://hono.dev) | Lightweight API endpoints |
-| **Agent Execution** | [Cloudflare Agents SDK](https://developers.cloudflare.com/agents) | Base class for implementing the stateful MCP server |
-| **Session State** | [Cloudflare Durable Objects](https://developers.cloudflare.com/durable-objects) | Provides stateful, isolated storage for each MCP connection |
+| **MCP Transport** | [Cloudflare Agents SDK](https://developers.cloudflare.com/agents) | Serves MCP traffic on the `/mcp` endpoint over Streamable HTTP |
+| **MCP Server** | [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) | Defines the tools and implements the MCP protocol |
 | **OAuth Core** | [Cloudflare Workers OAuth Provider](https://github.com/cloudflare/workers-oauth-provider) | Orchestrates the OAuth flow, delegating consent/authentication to PingOne |
 | **Ephemeral State** | [Cloudflare Workers KV](https://developers.cloudflare.com/kv) | Stores OAuth state required by the workers oauth provider |
 
 ### Requirements
 
-* Node.js (v20+)
+* Node.js (v22+)
 * PingOne environment with DaVinci
 * Cloudflare account & [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update)
 * [Todo API](../api) deployed
@@ -36,8 +36,8 @@ mcp/
 │── wrangler.jsonc                   # Worker configuration
 └── src/
     ├── index.ts                     # OAuth server flow and MCP server routing
-    ├── mcp.ts                       # Stateful MCP server as a Cloudflare McpAgent (durable object)
-    ├── config.ts                    # Worker bindings and Cloudflare durable object session data
+    ├── mcp.ts                       # Stateless MCP server factory (MCP SDK v2), one instance per request
+    ├── config.ts                    # Worker bindings and per-request authenticated session data
     ├── todoApi.client.ts            # HTTP client to the downstream Todo API
     └── auth/
         ├── workers-oauth-utils.ts   # Cloudflare OAuth utility functions

@@ -16,27 +16,13 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "remote-mcp-pingone",
 	"main": "dist/index.js",
-	"compatibility_date": "2025-03-10",
-	"compatibility_flags": ["nodejs_compat"],
-  "migrations": [
-    {
-      "tag": "v1",
-      "new_sqlite_classes": ["TodoMcpServer"]
-    }
-  ],
-	"durable_objects": {
-		"bindings": [
-			{
-				"class_name": "TodoMcpServer",
-				"name": "MCP_OBJECT"
-			}
-		],
-	},
+	"compatibility_date": "2026-09-01",
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
 	"kv_namespaces": [
 		{
 			"binding": "OAUTH_KV",
       // TODO: Replace placeholder with real ID from Cloudflare before deploying
-			"id": "fc8c8085f327402f99b302309963ceb8"
+			"id": "<PLACEHOLDER>"
 		}
 	],
 	"ai": {

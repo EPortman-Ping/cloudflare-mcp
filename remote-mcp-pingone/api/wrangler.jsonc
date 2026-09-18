@@ -22,7 +22,7 @@
 		{
 			"binding": "TODO_KV_PINGONE",
 			// TODO: Replace placeholder with real ID from Cloudflare before deploying
-			"id": "<PLACEHOLDER>"
+			"id": "3f6278f2f1814911ae5f3a880e9de289"
 		},
 	],
   "observability": {

@@ -62,17 +62,17 @@ The OAuth provider library implements a compliant OAuth 2.1 server directly with
 - **OAuth Server:** It manages the immediate relationship with the MCP client, handling registration and issuing session tokens.
 - **OIDC Client:** It orchestrates the upstream federation with PingOne, exchanging authorization codes for the access tokens needed to call protected APIs.
 
-### Cloudflare Agents (State & Transport)
+### Cloudflare Agents (Stateless Transport)
 
-The MCP server extends the McpAgent class, which automatically wraps the MCP logic in a durable object. This handles the complex infrastructure requirements:
-- **Session Persistence:** It creates a dedicated, isolated environment for each MCP connection and securely persists the PingOne tokens in the durable object's storage (`this.props`).
-- **Streamable HTTP:** The agent automatically handles the network transport layer. It accepts standard HTTP requests from MCP clients and routes them to MCP tools in the correct durable object.
+The MCP server implements the stateless MCP SDK v2 pattern (`createMcpHandler` + server factory, via the [Cloudflare Agents SDK](https://developers.cloudflare.com/agents)):
+- **Stateless Operation:** A fresh MCP server instance is created per request — no Durable Object, no protocol session. The MCP 2026-07-28 protocol revision carries version, capabilities, and identity on every request, so nothing needs to be remembered between requests.
+- **Per-Request Authentication:** The OAuth provider resolves the session for each request and injects the authenticated session (`props`, containing the PingOne token) into the MCP handler's execution context.
+- **Network Transport:** Standard Streamable HTTP over the single `/mcp` endpoint.
 
-### MCP SDK (Tool Logic)
+### MCP SDK v2 (Tool Logic)
 
-The official `@modelcontextprotocol/sdk` is used to define the actual capabilities of the MCP server. Inside the agent, an McpServer instance:
+The `@modelcontextprotocol/server` SDK (v2) is used to define the actual capabilities of the MCP server. Each per-request McpServer instance:
 - **Handles Protocol:** Manages the serialization of JSON-RPC messages and tool definitions.
-- **Enables Streaming:** Implements Streamable HTTP to support real-time, bi-directional communication over a single endpoint.
 
 ## Use Cases & Extensibility
 

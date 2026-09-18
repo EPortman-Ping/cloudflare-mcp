@@ -4,7 +4,6 @@ import { OAuthHelpers } from '@cloudflare/workers-oauth-provider';
  * External resources (bindings) available to the worker at runtime.
  */
 export type Env = {
-  MCP_OBJECT: DurableObjectNamespace;
   OAUTH_PROVIDER: OAuthHelpers;
   OAUTH_KV: KVNamespace;
   COOKIE_ENCRYPTION_KEY: string;

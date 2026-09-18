@@ -1,17 +1,9 @@
 import { Hono } from 'hono';
 import { OAuthProvider, OAuthHelpers } from '@cloudflare/workers-oauth-provider';
-import { TodoMcpServer } from './mcp';
+import { createMcpHandler } from 'agents/mcp/server';
+import { createTodoServer } from './mcp';
 import { handleAuthorize, handlePingOneCallback } from './auth/ping-handler';
-import type { Env } from './config';
-
-/**
- * Durable Object Export - Session State Management
- *
- * This export identifies the TodoMCPServer (an McpAgent base class) as the stateful backing logic for
- * the durable object binding. The cloudflare runtime uses this to instantiate a unique, isolated instance
- * per MCP session, ensuring state continuity and persistence across the worker's stateless HTTP requests.
- */
-export { TodoMcpServer };
+import type { Env, Props } from './config';
 
 /**
  * Worker Export - OAuth Server & MCP Gateway (HTTP Interface)
@@ -19,8 +11,9 @@ export { TodoMcpServer };
  * Cloudflare Workers OAuth Provider, which serves as the public entry point for all incoming HTTP requests.
  * Manages the OAuth authorization and MCP communication flow.
  *   - OAuth Server: Implements the OAuth endpoints for MCP clients.
- *   - OIDC Client: Delegates user authentication to PingOne with a custom hono router.
- *   - Stateful Router: Connects the authenticated request to the correct TodoMCPServer durable object instance.
+ *   - OIDC Client: Delegates user authentication to PingOne (via DaVinci) with a custom hono router.
+ *   - Stateless Router: Serves a fresh MCP server instance per request (MCP SDK v2), with the
+ *     authenticated session injected by the OAuth provider into the handler execution context.
  */
 export default new OAuthProvider({
   authorizeEndpoint: '/authorize',
@@ -29,8 +22,11 @@ export default new OAuthProvider({
   defaultHandler: new Hono<{ Bindings: Env & { OAUTH_PROVIDER: OAuthHelpers } }>()
     .get('/authorize', handleAuthorize)
     .get('/callback', handlePingOneCallback) as any,
-  apiHandlers: {
-    "/sse": TodoMcpServer.serveSSE("/sse"), // Legacy SSE transport
-    '/mcp': TodoMcpServer.serve('/mcp'), // Streamable HTTP transport
+  apiRoute: '/mcp',
+  apiHandler: {
+    fetch: (request, env, ctx) => {
+      const props = (ctx as { props?: Props }).props!;
+      return createMcpHandler(() => createTodoServer(env as Env, props))(request, env, ctx);
+    },
   },
 });

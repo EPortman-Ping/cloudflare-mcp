@@ -6,7 +6,6 @@
     "lib": ["ES2022", "WebWorker"],
     "rootDir": "src",
     "outDir": "dist",
-    "baseUrl": ".",
     "strict": true,
     "isolatedModules": true,
     "esModuleInterop": true,
